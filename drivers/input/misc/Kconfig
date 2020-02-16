@@ -889,3 +889,5 @@ config INPUT_HISI_POWERKEY
 	  module will be called hisi_powerkey.
 
 endif
+
+source "drivers/input/misc/fingerprint/Kconfig"
