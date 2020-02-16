@@ -1060,7 +1060,7 @@ killed:
 char *__get_task_comm(char *buf, size_t buf_size, struct task_struct *tsk)
 {
 	task_lock(tsk);
-	strncpy(buf, tsk->comm, buf_size);
+	strncpy(buf, tsk->comm, TASK_COMM_LEN);
 	task_unlock(tsk);
 	return buf;
 }
@@ -1075,7 +1075,7 @@ void __set_task_comm(struct task_struct *tsk, const char *buf, bool exec)
 {
 	task_lock(tsk);
 	trace_task_rename(tsk, buf);
-	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
+	strlcpy(tsk->comm, buf, TASK_COMM_LEN);
 	task_unlock(tsk);
 	perf_event_comm(tsk, exec);
 }
