@@ -30,6 +30,7 @@
 #include <linux/mempolicy.h>
 #include <linux/migrate.h>
 #include <linux/task_work.h>
+#include <linux/module.h>
 
 #include "sched.h"
 #include <trace/events/sched.h>
@@ -77,7 +78,7 @@ static unsigned int sched_nr_latency = 8;
  * After fork, child runs first. If set to 0 (default) then
  * parent will (try to) run first.
  */
-unsigned int sysctl_sched_child_runs_first __read_mostly;
+unsigned int sysctl_sched_child_runs_first __read_mostly = 1;
 
 /*
  * Controls whether, when SD_SHARE_PKG_RESOURCES is on, if all
@@ -98,7 +99,7 @@ unsigned int __read_mostly sysctl_sched_wake_to_idle;
 unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
 unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
 
-const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
+const_debug unsigned int sysctl_sched_migration_cost = 1000000UL;
 
 /*
  * The exponential sliding  window over which load is averaged for shares
