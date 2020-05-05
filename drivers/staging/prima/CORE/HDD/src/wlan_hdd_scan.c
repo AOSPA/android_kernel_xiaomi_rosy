@@ -61,9 +61,6 @@
 #include <palTypes.h>
 #include <aniGlobal.h>
 #include <dot11f.h>
-#ifdef WLAN_BTAMP_FEATURE
-#include "bap_hdd_misc.h"
-#endif
 
 #include <linux/wireless.h>
 #include <net/cfg80211.h>
@@ -726,14 +723,6 @@ int __iw_set_scan(struct net_device *dev, struct iw_request_info *info,
                  "%s: pwextBuf is NULL",__func__);
        return -EINVAL;
    }
-#ifdef WLAN_BTAMP_FEATURE
-   //Scan not supported when AMP traffic is on.
-   if( VOS_TRUE == WLANBAP_AmpSessionOn() ) 
-   {
-       VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR, "%s: No scanning when AMP is on",__func__);
-       return eHAL_STATUS_SUCCESS;
-   }
-#endif
    if(pHddCtx->scan_info.mScanPending == TRUE)
    {
        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:mScanPending is TRUE !!!",__func__);
@@ -839,7 +828,8 @@ int __iw_set_scan(struct net_device *dev, struct iw_request_info *info,
    }
 
    /* push addIEScan in scanRequset if exist */
-   if (pHddCtx->scan_info.scanAddIE.length)
+   if (pHddCtx->scan_info.scanAddIE.addIEdata && 
+       pHddCtx->scan_info.scanAddIE.length)
    { 
        scanRequest.uIEFieldLen = pHddCtx->scan_info.scanAddIE.length;
        scanRequest.pIEField = pHddCtx->scan_info.scanAddIE.addIEdata;
@@ -1071,15 +1061,6 @@ int iw_set_cscan(struct net_device *dev, struct iw_request_info *info,
     ENTER();
     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO, "%s: enter !!!",__func__);
 
-#ifdef WLAN_BTAMP_FEATURE
-    //Scan not supported when AMP traffic is on.
-    if( VOS_TRUE == WLANBAP_AmpSessionOn() )
-    {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR, "%s: No scanning when AMP is on",__func__);
-        return eHAL_STATUS_SUCCESS;
-    }
-#endif
-
     if ((WLAN_HDD_GET_CTX(pAdapter))->isLogpInProgress)
     {
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL, "%s:LOGP in Progress. Ignore!!!",__func__);
@@ -1286,7 +1267,8 @@ int iw_set_cscan(struct net_device *dev, struct iw_request_info *info,
         }
 
         /* push addIEScan in scanRequset if exist */
-        if (pHddCtx->scan_info.scanAddIE.length)
+        if (pHddCtx->scan_info.scanAddIE.addIEdata && 
+            pHddCtx->scan_info.scanAddIE.length)
         {
             scanRequest.uIEFieldLen = pHddCtx->scan_info.scanAddIE.length;
             scanRequest.pIEField = pHddCtx->scan_info.scanAddIE.addIEdata;

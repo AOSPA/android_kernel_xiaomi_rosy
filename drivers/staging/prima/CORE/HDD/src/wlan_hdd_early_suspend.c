@@ -72,12 +72,6 @@
 #include "cfgApi.h"
 #include <wlan_logging_sock_svc.h>
 
-#ifdef WLAN_BTAMP_FEATURE
-#include "bapApi.h"
-#include "bap_hdd_main.h"
-#include "bap_hdd_misc.h"
-#endif
-
 #include <linux/wcnss_wlan.h>
 #include <linux/inetdevice.h>
 #include <wlan_hdd_cfg.h>
@@ -443,7 +437,6 @@ VOS_STATUS hdd_enter_deep_sleep(hdd_context_t *pHddCtx, hdd_adapter_t *pAdapter)
 VOS_STATUS hdd_exit_deep_sleep(hdd_context_t *pHddCtx, hdd_adapter_t *pAdapter)
 {
    VOS_STATUS vosStatus;
-   eHalStatus halStatus;
 
    VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
       "%s: calling hdd_set_sme_config",__func__);
@@ -480,23 +473,7 @@ VOS_STATUS hdd_exit_deep_sleep(hdd_context_t *pHddCtx, hdd_adapter_t *pAdapter)
       goto err_voss_stop;
    }
 
-
-   //Open a SME session for future operation
-   halStatus = sme_OpenSession( pHddCtx->hHal, hdd_smeRoamCallback, pHddCtx,
-                                (tANI_U8 *)&pAdapter->macAddressCurrent,
-                                &pAdapter->sessionId);
-   if ( !HAL_STATUS_SUCCESS( halStatus ) )
-   {
-      hddLog(VOS_TRACE_LEVEL_FATAL,"sme_OpenSession() failed with status code %08d [x%08x]",
-                    halStatus, halStatus );
-      goto err_voss_stop;
-
-   }
-
    pHddCtx->hdd_ps_state = eHDD_SUSPEND_NONE;
-
-   //Trigger the initial scan
-   hdd_wlan_initial_scan(pAdapter);
 
    return VOS_STATUS_SUCCESS;
 
@@ -1520,7 +1497,7 @@ static void hdd_conf_suspend_ind(hdd_context_t* pHddCtx,
     hddLog(VOS_TRACE_LEVEL_INFO,
       "%s: send wlan suspend indication", __func__);
 
-    if(pHddCtx->cfg_ini->nEnableSuspend == WLAN_MAP_SUSPEND_TO_MCAST_BCAST_FILTER)
+    if((pHddCtx->cfg_ini->nEnableSuspend == WLAN_MAP_SUSPEND_TO_MCAST_BCAST_FILTER))
     {
         //Configure supported OffLoads
         hdd_conf_hostoffload(pAdapter, TRUE);
@@ -2356,14 +2333,6 @@ VOS_STATUS hdd_wlan_shutdown(void)
    wait_for_completion(&vosSchedContext->RxShutdown);
    vosSchedContext->RxThread = NULL;
 
-#ifdef WLAN_BTAMP_FEATURE
-   vosStatus = WLANBAP_Stop(pVosContext);
-   if (!VOS_IS_STATUS_SUCCESS(vosStatus))
-   {
-       VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-               "%s: Failed to stop BAP",__func__);
-   }
-#endif //WLAN_BTAMP_FEATURE
    vosStatus = vos_wda_shutdown(pVosContext);
    if (!VOS_IS_STATUS_SUCCESS(vosStatus))
    {
@@ -2599,10 +2568,6 @@ VOS_STATUS hdd_wlan_re_init(void)
 #ifdef HAVE_CBC_DONE
    int              max_cbc_retries = 0;
 #endif
-#ifdef WLAN_BTAMP_FEATURE
-   hdd_config_t     *pConfig = NULL;
-   WLANBAP_ConfigType btAmpConfig;
-#endif
 
    struct device *dev = NULL;
    hdd_ssr_timer_del();
@@ -2734,33 +2699,6 @@ VOS_STATUS hdd_wlan_re_init(void)
    }
 #endif
 
-#ifdef WLAN_BTAMP_FEATURE
-   vosStatus = WLANBAP_Open(pVosContext);
-   if(!VOS_IS_STATUS_SUCCESS(vosStatus))
-   {
-     VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-        "%s: Failed to open BAP",__func__);
-      goto err_vosstop;
-   }
-   vosStatus = BSL_Init(pVosContext);
-   if(!VOS_IS_STATUS_SUCCESS(vosStatus))
-   {
-     VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-        "%s: Failed to Init BSL",__func__);
-     goto err_bap_close;
-   }
-   vosStatus = WLANBAP_Start(pVosContext);
-   if (!VOS_IS_STATUS_SUCCESS(vosStatus))
-   {
-       VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-               "%s: Failed to start TL",__func__);
-       goto err_bap_close;
-   }
-   pConfig = pHddCtx->cfg_ini;
-   btAmpConfig.ucPreferredChannel = pConfig->preferredChannel;
-   vosStatus = WLANBAP_SetConfig(&btAmpConfig);
-#endif //WLAN_BTAMP_FEATURE
-
     /* Restart all adapters */
    hdd_start_all_adapters(pHddCtx);
    pHddCtx->last_scan_reject_session_id = 0xFF;
@@ -2825,14 +2763,6 @@ err_bap_stop:
    hdd_unregister_mcast_bcast_filter(pHddCtx);
 #endif
    hdd_close_all_adapters(pHddCtx);
-#ifdef WLAN_BTAMP_FEATURE
-   WLANBAP_Stop(pVosContext);
-#endif
-
-#ifdef WLAN_BTAMP_FEATURE
-err_bap_close:
-   WLANBAP_Close(pVosContext);
-#endif
 
 err_vosstop:
    vos_stop(pVosContext);

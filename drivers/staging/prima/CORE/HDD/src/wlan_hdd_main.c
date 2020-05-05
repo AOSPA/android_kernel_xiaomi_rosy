@@ -83,10 +83,6 @@
 #include <wlan_hdd_wowl.h>
 #include <wlan_hdd_misc.h>
 #include <wlan_hdd_wext.h>
-#ifdef WLAN_BTAMP_FEATURE
-#include <bap_hdd_main.h>
-#include <bapInternal.h>
-#endif // WLAN_BTAMP_FEATURE
 #include "wlan_hdd_trace.h"
 #include "vos_types.h"
 #include "vos_trace.h"
@@ -110,9 +106,6 @@ int wlan_hdd_ftm_start(hdd_context_t *pAdapter);
 #include <wlan_hdd_softap_tx_rx.h>
 #include "cfgApi.h"
 #include "wlan_hdd_dev_pwr.h"
-#ifdef WLAN_BTAMP_FEATURE
-#include "bap_hdd_misc.h"
-#endif
 #include "wlan_qct_pal_trace.h"
 #include "qwlan_version.h"
 #include "wlan_qct_wda.h"
@@ -315,9 +308,6 @@ static int __hdd_netdev_notifier_call(struct notifier_block * nb,
 #endif
    hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
    hdd_context_t *pHddCtx;
-#ifdef WLAN_BTAMP_FEATURE
-   VOS_STATUS status;
-#endif
    long result;
 
    //Make sure that this callback corresponds to our device.
@@ -380,26 +370,6 @@ static int __hdd_netdev_notifier_call(struct notifier_block * nb,
            VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
                "%s: Scan Abort Successful" , __func__);
         }
-#ifdef WLAN_BTAMP_FEATURE
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,"%s: disabling AMP", __func__);
-        status = WLANBAP_StopAmp();
-        if(VOS_STATUS_SUCCESS != status )
-        {
-           pHddCtx->isAmpAllowed = VOS_TRUE;
-           hddLog(VOS_TRACE_LEVEL_FATAL,
-                  "%s: Failed to stop AMP", __func__);
-        }
-        else
-        {
-           //a state m/c implementation in PAL is TBD to avoid this delay
-           msleep(500);
-           if ( pHddCtx->isAmpAllowed )
-           {
-                WLANBAP_DeregisterFromHCI();
-                pHddCtx->isAmpAllowed = VOS_FALSE;
-           }
-        }
-#endif //WLAN_BTAMP_FEATURE
         break;
 
    default:
@@ -8065,6 +8035,12 @@ int __hdd_open(struct net_device *dev)
       return -ENODEV;
    }
 
+   if (test_bit(DEVICE_IFACE_OPENED, &pAdapter->event_flags)) {
+          hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: session already opened for the adapter",
+                 __func__);
+          return 0;
+   }
+
    status = hdd_get_front_adapter ( pHddCtx, &pAdapterNode );
    while ( (NULL != pAdapterNode) && (VOS_STATUS_SUCCESS == status) )
    {
@@ -8091,7 +8067,14 @@ int __hdd_open(struct net_device *dev)
            return -EINVAL;
        }
    }
-   
+
+   status = hdd_init_station_mode( pAdapter );
+   if( VOS_STATUS_SUCCESS != status ) {
+          hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Failed to create session for station mode",
+                 __func__);
+          return -EINVAL;
+   }
+
    set_bit(DEVICE_IFACE_OPENED, &pAdapter->event_flags);
    if (hdd_connIsConnected(WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))) 
    {
@@ -8264,8 +8247,6 @@ int __hdd_stop (struct net_device *dev)
        wlan_hdd_stop_mon(pHddCtx, true);
    }
 
-   /* Make sure the interface is marked as closed */
-   clear_bit(DEVICE_IFACE_OPENED, &pAdapter->event_flags);
    hddLog(VOS_TRACE_LEVEL_INFO, "%s: Disabling OS Tx queues", __func__);
 
    /* Disable TX on the interface, after this hard_start_xmit() will not
@@ -8286,7 +8267,8 @@ int __hdd_stop (struct net_device *dev)
     * Notice that the hdd_stop_adapter is requested not to close the session
     * That is intentional to be able to scan if it is a STA/P2P interface
     */
-   hdd_stop_adapter(pHddCtx, pAdapter, VOS_FALSE);
+   hdd_stop_adapter(pHddCtx, pAdapter, VOS_TRUE);
+   clear_bit(DEVICE_IFACE_OPENED, &pAdapter->event_flags);
 #ifdef FEATURE_WLAN_TDLS
    mutex_lock(&pHddCtx->tdls_lock);
 #endif
@@ -8339,13 +8321,15 @@ int __hdd_stop (struct net_device *dev)
        }
    }
 
+   pAdapter->dev->wireless_handlers = NULL;
+
    /*
     * Upon wifi turn off, DUT has to flush the scan results so if
     * this is the last cli iface, flush the scan database.
     */
    if (!hdd_is_cli_iface_up(pHddCtx))
        sme_ScanFlushResult(pHddCtx->hHal, 0);
-   
+
    EXIT();
    return 0;
 }
@@ -8576,7 +8560,10 @@ void hdd_full_pwr_cbk(void *callbackContext, eHalStatus status)
    hdd_context_t *pHddCtx = (hdd_context_t*)callbackContext;
 
    hddLog(VOS_TRACE_LEVEL_INFO_HIGH,"HDD full Power callback status = %d", status);
-   complete(&pHddCtx->full_pwr_comp_var);
+   if(&pHddCtx->full_pwr_comp_var)
+   {
+      complete(&pHddCtx->full_pwr_comp_var);
+   }
 }
 
 #ifdef WLAN_FEATURE_RMC
@@ -8898,10 +8885,11 @@ VOS_STATUS hdd_read_cfg_file(v_VOID_t *pCtx, char *pFileName,
 static int __hdd_set_mac_address(struct net_device *dev, void *addr)
 {
    hdd_adapter_t *pAdapter;
+   hdd_adapter_t *adapter_temp;
    hdd_context_t *pHddCtx;
    struct sockaddr *psta_mac_addr = addr;
-   eHalStatus halStatus = eHAL_STATUS_SUCCESS;
-   int ret = 0;
+   int ret = 0, i;
+   v_MACADDR_t mac_addr;
 
    ENTER();
    pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
@@ -8914,15 +8902,47 @@ static int __hdd_set_mac_address(struct net_device *dev, void *addr)
    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
    ret = wlan_hdd_validate_context(pHddCtx);
    if (0 != ret)
-   {
        return ret;
+
+   memcpy(&mac_addr, psta_mac_addr->sa_data, sizeof(mac_addr));
+   if(vos_is_macaddr_zero(&mac_addr)) {
+        hddLog(VOS_TRACE_LEVEL_ERROR, "Zero Mac address");
+        return -EINVAL;
    }
 
+   if (vos_is_macaddr_broadcast(&mac_addr)) {
+        hddLog(VOS_TRACE_LEVEL_ERROR,"MAC is Broadcast");
+        return -EINVAL;
+   }
+
+   if (vos_is_macaddr_multicast(&mac_addr)) {
+        hddLog(VOS_TRACE_LEVEL_ERROR, "Multicast Mac address");
+        return -EINVAL;
+   }
+   adapter_temp = hdd_get_adapter_by_macaddr(pHddCtx, mac_addr.bytes);
+   if (adapter_temp) {
+         if (!strcmp(adapter_temp->dev->name, dev->name))
+            return 0;
+        hddLog(VOS_TRACE_LEVEL_ERROR,
+               "%s: WLAN Mac Addr: "
+               MAC_ADDRESS_STR, __func__,
+               MAC_ADDR_ARRAY(mac_addr.bytes));
+         return -EINVAL;
+   }
+
+  for (i = 0; i < VOS_MAX_CONCURRENCY_PERSONA; i++) {
+          if (!vos_mem_compare(&pAdapter->macAddressCurrent.bytes,
+              &pHddCtx->cfg_ini->intfMacAddr[i].bytes[0], VOS_MAC_ADDR_SIZE)) {
+              memcpy(&pHddCtx->cfg_ini->intfMacAddr[i].bytes[0], mac_addr.bytes,
+                     VOS_MAC_ADDR_SIZE);
+             break;
+        }
+  }
    memcpy(&pAdapter->macAddressCurrent, psta_mac_addr->sa_data, ETH_ALEN);
    memcpy(dev->dev_addr, psta_mac_addr->sa_data, ETH_ALEN);
 
    EXIT();
-   return halStatus;
+   return 0;
 }
 
 /**---------------------------------------------------------------------------
@@ -9800,9 +9820,6 @@ hdd_adapter_t* hdd_open_adapter( hdd_context_t *pHddCtx, tANI_U8 session_type,
 #endif
 
          hdd_initialize_adapter_common(pAdapter);
-         status = hdd_init_station_mode( pAdapter );
-         if( VOS_STATUS_SUCCESS != status )
-            goto err_free_netdev;
 
          status = hdd_register_interface( pAdapter, rtnl_held );
          if( VOS_STATUS_SUCCESS != status )
@@ -9859,16 +9876,12 @@ hdd_adapter_t* hdd_open_adapter( hdd_context_t *pHddCtx, tANI_U8 session_type,
          pAdapter->device_mode = session_type;
 
          hdd_initialize_adapter_common(pAdapter);
-         status = hdd_init_ap_mode(pAdapter, false);
-         if( VOS_STATUS_SUCCESS != status )
-            goto err_free_netdev;
 
          status = hdd_sta_id_hash_attach(pAdapter);
          if (VOS_STATUS_SUCCESS != status)
          {
              hddLog(VOS_TRACE_LEVEL_FATAL,
                     FL("failed to attach hash for session %d"), session_type);
-             hdd_deinit_adapter(pHddCtx, pAdapter, rtnl_held);
              goto err_free_netdev;
          }
 
@@ -12401,15 +12414,6 @@ void hdd_wlan_exit(hdd_context_t *pHddCtx)
    
    hdd_stop_all_adapters( pHddCtx );
 
-#ifdef WLAN_BTAMP_FEATURE
-   vosStatus = WLANBAP_Stop(pVosContext);
-   if (!VOS_IS_STATUS_SUCCESS(vosStatus))
-   {
-       VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-               "%s: Failed to stop BAP",__func__);
-   }
-#endif //WLAN_BTAMP_FEATURE
-
    //Stop all the modules
    vosStatus = vos_stop( pVosContext );
    if (!VOS_IS_STATUS_SUCCESS(vosStatus))
@@ -13464,11 +13468,6 @@ int hdd_wlan_startup(struct device *dev )
    hdd_adapter_t *softapAdapter = NULL;
    hdd_context_t *pHddCtx = NULL;
    v_CONTEXT_t pVosContext= NULL;
-#ifdef WLAN_BTAMP_FEATURE
-   VOS_STATUS vStatus = VOS_STATUS_SUCCESS;
-   WLANBAP_ConfigType btAmpConfig;
-   hdd_config_t *pConfig;
-#endif
    int ret;
    struct wiphy *wiphy;
    v_MACADDR_t mac_addr;
@@ -14088,36 +14087,6 @@ int hdd_wlan_startup(struct device *dev )
       }
    }
 
-#ifdef WLAN_BTAMP_FEATURE
-   vStatus = WLANBAP_Open(pVosContext);
-   if(!VOS_IS_STATUS_SUCCESS(vStatus))
-   {
-     VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-        "%s: Failed to open BAP",__func__);
-      goto err_close_adapter;
-   }
-
-   vStatus = BSL_Init(pVosContext);
-   if(!VOS_IS_STATUS_SUCCESS(vStatus))
-   {
-     VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-        "%s: Failed to Init BSL",__func__);
-     goto err_bap_close;
-   }
-   vStatus = WLANBAP_Start(pVosContext);
-   if (!VOS_IS_STATUS_SUCCESS(vStatus))
-   {
-       VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
-               "%s: Failed to start TL",__func__);
-       goto err_bap_close;
-   }
-
-   pConfig = pHddCtx->cfg_ini;
-   btAmpConfig.ucPreferredChannel = pConfig->preferredChannel;
-   status = WLANBAP_SetConfig(&btAmpConfig);
-
-#endif //WLAN_BTAMP_FEATURE
-
    /*
     * UapsdMask is 0xf if U-APSD is enbaled for all AC's...
     * The value of CFG_QOS_WMM_UAPSD_MASK_DEFAULT is 0xaa(Magic Value)
@@ -14166,11 +14135,7 @@ int hdd_wlan_startup(struct device *dev )
    if ( !VOS_IS_STATUS_SUCCESS( status ) )
    {
       hddLog(VOS_TRACE_LEVEL_FATAL,"%s: hddRegisterPmOps failed",__func__);
-#ifdef WLAN_BTAMP_FEATURE
-      goto err_bap_stop;
-#else
       goto err_close_adapter; 
-#endif //WLAN_BTAMP_FEATURE
    }
 
    /* Open debugfs interface */
@@ -14425,16 +14390,6 @@ err_unregister_pmops:
    hddDeregisterPmOps(pHddCtx);
 
    hdd_debugfs_exit(pHddCtx);
-
-#ifdef WLAN_BTAMP_FEATURE
-err_bap_stop:
-  WLANBAP_Stop(pVosContext);
-#endif
-
-#ifdef WLAN_BTAMP_FEATURE
-err_bap_close:
-   WLANBAP_Close(pVosContext);
-#endif
 
 err_close_adapter:
    hdd_close_all_adapters( pHddCtx );
@@ -15132,10 +15087,12 @@ wlan_hdd_is_GO_power_collapse_allowed (hdd_context_t* pHddCtx)
           return TRUE;
      }
      else
+     {
           /* wait till GO changes its interface to p2p device */
           hddLog(VOS_TRACE_LEVEL_INFO,
                  FL("Del_bss called, avoid apps suspend"));
           return FALSE;
+     }
 
 }
 /* Decide whether to allow/not the apps power collapse. 

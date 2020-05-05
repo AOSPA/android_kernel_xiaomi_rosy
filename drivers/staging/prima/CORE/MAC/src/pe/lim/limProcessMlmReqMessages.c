@@ -4173,19 +4173,15 @@ tLimMlmRemoveKeyCnf  mlmRemoveKeyCnf;
       
 
       goto end;
-  }
-  else
+  } else {
     staIdx = pStaDs->staIndex;
-  
-
-
     psessionEntry->limMlmState = eLIM_MLM_WT_REMOVE_STA_KEY_STATE;
     MTRACE(macTrace(pMac, TRACE_CODE_MLM_STATE, psessionEntry->peSessionId, psessionEntry->limMlmState));
-
     // Package WDA_REMOVE_STAKEY_REQ message parameters
     limSendRemoveStaKeyReq( pMac,pMlmRemoveKeyReq,staIdx,psessionEntry);
     return;
- 
+  }
+
 end:
     limPostSmeRemoveKeyCnf( pMac,
       psessionEntry,
@@ -4255,7 +4251,14 @@ limProcessMinChannelTimeout(tpAniSirGlobal pMac)
         {
             // This shouldn't be the case, but when this happens, this timeout should be for the last channelId. 
             // Get the channelNum as close to correct as possible.
-            channelNum = pMac->lim.gpLimMlmScanReq->channelList.channelNumber[pMac->lim.gpLimMlmScanReq->channelList.numChannels - 1];
+            if(pMac->lim.gpLimMlmScanReq->channelList.channelNumber)
+            {
+                channelNum = pMac->lim.gpLimMlmScanReq->channelList.channelNumber[pMac->lim.gpLimMlmScanReq->channelList.numChannels - 1];
+            }
+            else
+            {
+               channelNum = 1;
+            }
         }
 
         limLog(pMac, LOGW,
@@ -4324,7 +4327,14 @@ limProcessMaxChannelTimeout(tpAniSirGlobal pMac)
         }
         else
         {
-            channelNum = pMac->lim.gpLimMlmScanReq->channelList.channelNumber[pMac->lim.gpLimMlmScanReq->channelList.numChannels - 1];
+            if(pMac->lim.gpLimMlmScanReq->channelList.channelNumber)
+            {
+                channelNum = pMac->lim.gpLimMlmScanReq->channelList.channelNumber[pMac->lim.gpLimMlmScanReq->channelList.numChannels - 1];
+            }
+            else
+            {
+               channelNum = 1;
+            }
         }
         limLog(pMac, LOGW,
            FL("Sending End Scan req from MAX_CH_TIMEOUT in state %d on ch-%d"),
@@ -5408,8 +5418,8 @@ ePhyChanBondState limGet11ACPhyCBState(tpAniSirGlobal pMac, tANI_U8 channel, tAN
         return htSecondaryChannelOffset;
     }
 
-    if ( htSecondaryChannelOffset 
-                 == PHY_DOUBLE_CHANNEL_LOW_PRIMARY
+    if ( (htSecondaryChannelOffset 
+                 == PHY_DOUBLE_CHANNEL_LOW_PRIMARY)
        )
     {
         if ((channel + 2 ) == peerCenterChan )
@@ -5423,8 +5433,8 @@ ePhyChanBondState limGet11ACPhyCBState(tpAniSirGlobal pMac, tANI_U8 channel, tAN
                        FL("Invalid Channel Number = %d Center Chan = %d "),
                                  channel, peerCenterChan);
     }
-    if ( htSecondaryChannelOffset 
-                 == PHY_DOUBLE_CHANNEL_HIGH_PRIMARY
+    if ( (htSecondaryChannelOffset 
+                 == PHY_DOUBLE_CHANNEL_HIGH_PRIMARY)
        )
     {
         if ((channel - 2 ) == peerCenterChan )
