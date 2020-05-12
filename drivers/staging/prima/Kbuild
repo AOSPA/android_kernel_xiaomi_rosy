@@ -105,7 +105,7 @@ endif # ANDROID_BUILD_TOP
 else
 ifneq ($(ANDROID_BUILD_TOP),)
 ifeq ($(TARGET_PRODUCT),sdm429w)
-    WLAN_BLD_DIR := $(ANDROID_BUILD_TOP)/device/qcom/sdm429w/common/opensource/wlan
+     WLAN_BLD_DIR := $(ANDROID_BUILD_TOP)/device/qcom/sdm429w/common/opensource/wlan
 else
     WLAN_BLD_DIR := $(ANDROID_BUILD_TOP)/vendor/qcom/opensource/wlan
 endif #TARGET_PRODUCT
@@ -761,7 +761,13 @@ CDEFINES += -DEXISTS_MSM_SMSM
 endif
 
 # Fix build for GCC 4.7
-EXTRA_CFLAGS += -Wno-maybe-uninitialized -Wno-unused-function -Wno-unused-variable
+EXTRA_CFLAGS += $(call cc-disable-warning, maybe-uninitialized) -Wno-unused-function -Wno-unused-variable
+
+# Silence Clang warning
+ifeq ($(cc-name),clang)
+EXTRA_CFLAGS += $(call cc-option, -Wframe-larger-than=2048)
+EXTRA_CFLAGS += -Wno-enum-conversion
+endif
 
 ifeq ($(CONFIG_WLAN_OFFLOAD_PACKETS),y)
 CDEFINES += -DWLAN_FEATURE_OFFLOAD_PACKETS
