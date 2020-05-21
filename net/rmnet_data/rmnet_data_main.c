@@ -26,7 +26,7 @@
 
 /* Module Parameters */
 unsigned int rmnet_data_log_level;
-module_param(rmnet_data_log_level, uint,  S_IRUGO | S_IWUSR);
+module_param(rmnet_data_log_level, uint, 0644);
 MODULE_PARM_DESC(log_level, "Logging level");
 
 unsigned int rmnet_data_log_module_mask;
