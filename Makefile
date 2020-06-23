@@ -406,6 +406,9 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -std=gnu89
 
+# Avoid gcc-10 regression
+KBUILD_CFLAGS	+= --param=max-inline-insns-auto=1000
+
 # GCC flags to tune generated code for ROSY's Cortex-A53 CPU
 KBUILD_CFLAGS += -march=armv8-a -mtune=cortex-a53
 
