@@ -200,6 +200,8 @@
 		qcom,mdss-dsi-panel-status-valid-params = <1 1>;
 		qcom,mdss-dsi-panel-status-value = <0x00>,<0x9C>;
 		qcom,mdss-dsi-panel-status-read-length = <1 1>;
-
+                qcom,panel-allow-phy-poweroff;
+                qcom,ulps-enabled;
+                qcom,suspend-ulps-enabled;
 	};
 };
