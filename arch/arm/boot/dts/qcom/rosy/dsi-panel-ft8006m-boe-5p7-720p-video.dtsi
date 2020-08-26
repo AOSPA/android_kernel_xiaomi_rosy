@@ -107,6 +107,5 @@
 		qcom,mdss-dsi-panel-status-valid-params = <1>;
 		qcom,mdss-dsi-panel-status-value = <0x9c>;
 		qcom,mdss-dsi-panel-status-read-length = <1>;
-                qcom,panel-allow-phy-poweroff;
 	};
 };
