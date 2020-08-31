@@ -1,12 +1,3 @@
-/ {
-	model = "Qualcomm Technologies, Inc. SDM450";
-	compatible = "qcom,sdm450";
-	qcom,msm-id = <338 0x0>;
-	interrupt-parent = <&intc>;
-
-	soc: soc { };
-};
-
 &clock_gcc_gfx {
 	compatible = "qcom,gcc-gfx-sdm450";
 	qcom,gfxfreq-corner =
