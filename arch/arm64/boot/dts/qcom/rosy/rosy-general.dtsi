@@ -1,0 +1,346 @@
+&soc {
+
+	spi_6: spi@7af6000 {
+		compatible = "qcom,spi-qup-v2";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg-names = "spi_physical", "spi_bam_physical";
+		reg = <0x7af6000 0x600>, <0x7ac4000 0x1f000>;
+		interrupt-names = "spi_irq", "spi_bam_irq";
+		interrupts = <0 300 0>, <0 239 0>;
+		spi-max-frequency = <50000000>;
+		pinctrl-names = "spi_default", "spi_sleep";
+		pinctrl-0 = <&spi6_default &spi6_cs0_active>;
+		pinctrl-1 = <&spi6_sleep &spi6_cs0_sleep>;
+		clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
+			<&clock_gcc clk_gcc_blsp2_qup2_spi_apps_clk>;
+		clock-names = "iface_clk", "core_clk";
+		qcom,infinite-mode = <0>;
+		qcom,use-bam;
+		qcom,rt-priority;
+		qcom,use-pinctrl;
+		qcom,ver-reg-exists;
+		qcom,bam-consumer-pipe-index = <6>;
+		qcom,bam-producer-pipe-index = <7>;
+		qcom,master-id = <84>;
+		status = "ok";
+
+		spi_ir@1 {
+			compatible = "qcom,spi-msm-codec-slave";
+			reg = <1>;
+			spi-max-frequency = <50000000>;
+			spi-cpol;
+			status = "ok";
+		};
+	};
+	
+	i2c_2: i2c@78b6000 {
+		/delete-node/ adv7533@39;
+
+		aw2013@45 { /* LED */
+			compatible = "awinic,aw2013";
+			reg = <0x45>;
+			rgb_led-supply = <&pm8953_l10>;
+
+			red {
+				label = "red";
+				linux,default-trigger = "battery-red";
+				default-state = "off";
+				retain-state-suspended;
+			};
+
+			green {
+				label = "green";
+				linux,default-trigger = "battery-green";
+				default-state = "off";
+				retain-state-suspended;
+			};
+
+			blue {
+				label = "blue";
+				linux,default-trigger = "battery-blue";
+				default-state = "off";
+				retain-state-suspended;
+			};
+
+			white {
+				label = "white";
+				linux,default-trigger = "none";
+				default-state = "off";
+				retain-state-suspended;
+			};
+		};
+	};
+
+	i2c_8: i2c@7af8000 { /* BLSP2 QUP3 */
+		compatible = "qcom,i2c-msm-v2";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg-names = "qup_phys_addr";
+		reg = <0x7af8000 0x600>;
+		interrupt-names = "qup_irq";
+		interrupts = <0 302 0>;
+		qcom,clk-freq-out = <400000>;
+		qcom,clk-freq-in  = <19200000>;
+		clock-names = "iface_clk", "core_clk";
+		clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
+			<&clock_gcc clk_gcc_blsp2_qup4_i2c_apps_clk>;
+		pinctrl-names = "i2c_active", "i2c_sleep";
+		pinctrl-0 = <&i2c_8_active>;
+		pinctrl-1 = <&i2c_8_sleep>;
+		qcom,noise-rjct-scl = <0>;
+		qcom,noise-rjct-sda = <0>;
+		qcom,master-id = <84>;
+		dmas = <&dma_blsp2 10 64 0x20000020 0x20>,
+			<&dma_blsp2 11 32 0x20000020 0x20>;
+		dma-names = "tx", "rx";
+
+		aw87319@58 { /* AWINIC 87319 PA speaker */
+			compatible = "awinic,aw87319_pa";
+			reg = <0x58>;
+			qcom,ext_pa_spk_aw87319_rst = <&tlmm 96 0>;
+		};
+	};
+
+	i2c_3: i2c@78b7000 {
+
+		status = "ok";
+
+		focaltech@38 {
+			compatible = "focaltech,fts";
+			reg = <0x38>;
+			interrupt-parent = <&tlmm>;
+			interrupts = <65 0x2008>;
+			vdd-supply = <&pm8953_l10>;
+			vcc_i2c-suppy = <&pm8953_l5>;
+			panel_iovdd-supply = <&iovdd_gpio_vreg>;
+			lab-supply = <&lab_regulator>;
+			ibb-supply = <&ibb_regulator>;
+
+			/* pins used by touchscreen */
+			pinctrl-names = "pmx_ts_active","pmx_ts_suspend",
+					"pmx_ts_release";
+			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+			pinctrl-2 = <&ts_release>;
+
+			focaltech,name = "FT8716";
+			focaltech,family-id = <0x54>;
+			focaltech,reset-gpio = <&tlmm 64 0x00>;
+			focaltech,irq-gpio = <&tlmm 65 0x2008>;
+			focaltech,display-coords = <0 0 720 1440>;
+			focaltech,panel-coords = <0 0 720 1440>;
+			focaltech,virtual-key1 = <139 560 2000>; /* menu */
+			focaltech,virtual-key2 = <102 360 2000>; /* home */
+			focaltech,virtual-key3 = <158 160 2000>; /* back */
+			focaltech,no-force-update;
+			focaltech,i2c-pull-up;
+			focaltech,group-id = <1>;
+			focaltech,hard-reset-delay-ms = <20>;
+			focaltech,soft-reset-delay-ms = <200>;
+			focaltech,num-max-touches = <10>;
+			focaltech,fw-delay-aa-ms = <30>;
+			focaltech,fw-delay-55-ms = <30>;
+			focaltech,fw-upgrade-id1 = <0x79>;
+			focaltech,fw-upgrade-id2 = <0x18>;
+			focaltech,fw-delay-readid-ms = <10>;
+			focaltech,fw-delay-era-flsh-ms = <2000>;
+			focaltech,fw-auto-cal;
+			focaltech,ignore-id-check;
+		};
+
+		focaltech@39 {
+			compatible = "focaltech,ft8006m";
+			reg = <0x39>;
+			interrupt-parent = <&tlmm>;
+			interrupts = <65 0x2008>;
+			vdd-supply = <&pm8953_l10>;
+			vcc_i2c-suppy = <&pm8953_l5>;
+			panel_iovdd-supply = <&iovdd_gpio_vreg>;
+			lab-supply = <&lab_regulator>;
+			ibb-supply = <&ibb_regulator>;
+
+			/* pins used by touchscreen */
+			pinctrl-names = "pmx_ts_active","pmx_ts_suspend",
+					"pmx_ts_release";
+			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+			pinctrl-2 = <&ts_release>;
+
+			focaltech,name = "FT8006M";
+			focaltech,family-id = <0x54>;
+			focaltech,reset-gpio = <&tlmm 64 0x00>;
+			focaltech,irq-gpio = <&tlmm 65 0x2008>;
+			focaltech,display-coords = <0 0 720 1440>;
+			focaltech,panel-coords = <0 0 720 1440>;
+			focaltech,virtual-key1 = <139 560 2000>; /* menu */
+			focaltech,virtual-key2 = <102 360 2000>; /* home */
+			focaltech,virtual-key3 = <158 160 2000>; /* back */
+			focaltech,no-force-update;
+			focaltech,i2c-pull-up;
+			focaltech,group-id = <1>;
+			focaltech,hard-reset-delay-ms = <20>;
+			focaltech,soft-reset-delay-ms = <200>;
+			focaltech,num-max-touches = <10>;
+			focaltech,fw-delay-aa-ms = <30>;
+			focaltech,fw-delay-55-ms = <30>;
+			focaltech,fw-upgrade-id1 = <0x79>;
+			focaltech,fw-upgrade-id2 = <0x18>;
+			focaltech,fw-delay-readid-ms = <10>;
+			focaltech,fw-delay-era-flsh-ms = <2000>;
+			focaltech,fw-auto-cal;
+			focaltech,ignore-id-check;
+		};
+	};
+
+	blsp1_uart0: serial@78af000 {
+		status = "ok";
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart_console_active>;
+	};
+
+	sn_fuse: snfuse@0xA60A8 {
+		compatible = "qcom,sn-fuse";
+		reg = <0xA60A8 0x4>;
+		reg-names = "sn-base";
+	};
+
+	sec_boot_fuse: secbootfuse@0xA01D0 {
+		compatible = "qcom,sec-boot-fuse";
+		reg = <0xA01D0 0x4>;
+		reg-names = "sec-boot-base";
+	};
+
+	qcom,wdt@b017000 {
+		qcom,bark-time = <15000>;
+	};
+
+	qcom,msm-imem@8600000 {
+		/delete-node/ dload_type@1c;
+
+		dload_type@18 {
+			compatible = "qcom,msm-imem-dload-type";
+			reg = <0x18 4>;
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		input-name = "gpio-keys";
+		pinctrl-names = "tlmm_gpio_key_active",
+				"tlmm_gpio_key_suspend";
+		pinctrl-0 = <&gpio_key_active>;
+		pinctrl-1 = <&gpio_key_suspend>;
+
+		vol_up {
+			label = "volume_up";
+			gpios = <&tlmm 85 0x1>;
+			linux,input-type = <1>;
+			linux,code = <115>;
+			debounce-interval = <15>;
+		};
+	};
+
+	fpc1020 {
+		/delete-property/ fpc,enable-wakeup;
+		compatible = "fpc,fpc1020";
+		interrupt-parent = <&tlmm>;
+		interrupts = <48 0x0>;
+		fpc,gpio_rst = <&tlmm 140 0>;
+		fpc,gpio_irq = <&tlmm 48 0>;
+		fpc,gpio_pwr = <&tlmm 134 0>;
+		vcc_spi-supply = <&pm8953_l5>;
+		vdd_ana-supply = <&pm8953_l5>;
+		vdd_io-supply = <&pm8953_l5>;
+		fpc,enable-on-boot;
+		fpc,spi-max-frequency = <4800000>;
+		/* Only for SPI Clock Handled by Linux */
+		clock-names = "iface_clk", "core_clk";
+		clocks = <&clock_gcc clk_gcc_blsp1_ahb_clk>,
+			<&clock_gcc clk_gcc_blsp1_qup1_spi_apps_clk>;
+		pinctrl-names = "fpc1020_spi_active",
+				"fpc1020_reset_reset",
+				"fpc1020_reset_active",
+				"fpc1020_irq_active";
+		pinctrl-0 = <&fpc_spi_active>;
+		pinctrl-1 = <&fpc_reset_reset>;
+		pinctrl-2 = <&fpc_reset_active>;
+		pinctrl-3 = <&fpc_irq_active>;
+	};
+
+	goodix_fp {
+		compatible = "goodix,fingerprint";
+		interrupt-parent = <&tlmm>;
+		interrupts = <48 0x1>;
+		fp-gpio-irq = <&tlmm 48 0x00>;
+		fp-gpio-reset = <&tlmm 140 0x00>;
+		fp-gpio-power = <&tlmm 134 0x00>;
+		spi-max-frequency = <19200000>;
+	};
+
+	/delete-node/ qseecom@85b00000;
+
+	qcom_seecom: qseecom@84A00000 {
+		compatible = "qcom,qseecom";
+		reg = <0x84A00000 0x1900000>;
+		reg-names = "secapp-region";
+		qcom,hlos-num-ce-hw-instances = <1>;
+		qcom,hlos-ce-hw-instance = <0>;
+		qcom,qsee-ce-hw-instance = <0>;
+		qcom,disk-encrypt-pipe-pair = <2>;
+		qcom,support-fde;
+		qcom,msm-bus,name = "qseecom-noc";
+		qcom,msm-bus,num-cases = <4>;
+		qcom,msm-bus,num-paths = <1>;
+		qcom,support-bus-scaling;
+		qcom,msm-bus,vectors-KBps =
+			<55 512 0 0>,
+			<55 512 0 0>,
+			<55 512 120000 1200000>,
+			<55 512 393600 3936000>;
+		clocks = <&clock_gcc clk_crypto_clk_src>,
+			 <&clock_gcc clk_gcc_crypto_clk>,
+			 <&clock_gcc clk_gcc_crypto_ahb_clk>,
+			 <&clock_gcc clk_gcc_crypto_axi_clk>;
+		clock-names = "core_clk_src", "core_clk",
+				"iface_clk", "bus_clk";
+		qcom,ce-opp-freq = <100000000>;
+	};
+};
+
+&wled {
+	qcom,en-cabc;
+	qcom,cons-sync-write-delay-us = <1000>;
+};
+
+&usb3 {
+	qcom,msm-bus,num-cases = <2>;
+};
+
+&pmi_haptic {
+	/delete-property/ qcom,en-brake;
+	qcom,actuator-type = <1>;
+};
+
+&qusb_phy {
+	qcom,qusb-phy-init-seq = <0xF8 0x80
+				0x73 0x84
+				0x83 0x88
+				0xC7 0x8C
+				0x14 0x9C
+				0x30 0x08
+				0x79 0x0C
+				0x21 0x10
+				0x00 0x90
+				0x9F 0x1C
+				0x00 0x18>;
+};
+
+/ {
+	qrd_batterydata: qcom,battery-data {
+		qcom,batt-id-range-pct = <15>;
+		#include "batteries/batterydata-Scud-4v4-3300mah.dtsi"
+		#include "batteries/batterydata-Sunwoda-4v4-3300mah.dtsi"
+		#include "batteries/batterydata-D1_Default-4v4-3300mah.dtsi"
+	};
+};
