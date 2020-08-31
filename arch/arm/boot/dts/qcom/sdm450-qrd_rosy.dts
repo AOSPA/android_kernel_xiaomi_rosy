@@ -60,4 +60,4 @@
 	};
 };
 
-#include "rosy/rosy-overlay.dtsi"
+#include "rosy/rosy.dtsi"

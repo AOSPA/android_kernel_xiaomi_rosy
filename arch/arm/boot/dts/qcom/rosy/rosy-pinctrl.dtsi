@@ -1,4 +1,5 @@
 &tlmm {
+
 	fpc_spi_active: fpc_spi_active {
 		mux {
 			pins = "gpio135", "gpio136", "gpio137", "gpio138";
@@ -137,6 +138,28 @@
 			};
 		};
 	};
+
+	pmx_mdss {
+		mdss_dsi_active: mdss_dsi_active {
+			mux {
+				pins = "gpio61";
+			};
+
+			config {
+				pins = "gpio61";
+			};
+		};
+
+		mdss_dsi_suspend: mdss_dsi_suspend {
+			mux {
+				pins = "gpio61";
+			};
+
+			config {
+				pins = "gpio61";
+			};
+		};
+	};
 };
 
 &cam_sensor_rear_default {
@@ -162,5 +185,17 @@
 &i2c_2_sleep {
 	mux {
 		function = "blsp_i2c2";
+	};
+};
+
+&sdc2_cmd_on {
+	config {
+		drive-strength=<12>;
+	};
+};
+
+&sdc2_data_on {
+	config {
+		drive-strength=<12>;
 	};
 };

@@ -1,0 +1,23 @@
+/ {
+	model = "Qualcomm Technologies, Inc. SDM450";
+	compatible = "qcom,sdm450";
+	qcom,msm-id = <338 0x0>;
+	interrupt-parent = <&intc>;
+
+	aliases {
+		spi6 = &spi_6;
+		i2c8 = &i2c_8;
+	};
+
+	soc: soc { };
+};
+
+#include "rosy-audio.dtsi"
+#include "rosy-camera.dtsi"
+#include "rosy-general.dtsi"
+#include "rosy-gpu.dtsi"
+#include "rosy-mdss.dtsi"
+#include "rosy-misc.dtsi"
+#include "rosy-mpm.dtsi"
+#include "rosy-pinctrl.dtsi"
+#include "rosy-power.dtsi"
