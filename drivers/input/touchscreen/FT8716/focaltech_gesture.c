@@ -610,7 +610,6 @@ int fts_gesture_resume(struct i2c_client *client)
     FTS_FUNC_EXIT();
     return 0;
 }
-extern int tp_gesture_onoff;
 
 static ssize_t gesture_read(struct file *file, char __user *page, size_t size, loff_t *ppos)
 {
@@ -656,7 +655,6 @@ static ssize_t gesture_write(struct file *filp, const char __user *buff, size_t 
 #endif
 
     FTS_DEBUG("%s gesture_data.gesture_all_switch :%d\n", __func__, gesture_data.gesture_all_switch);
-	tp_gesture_onoff = gesture_data.gesture_all_switch;
 
     return len;
 }

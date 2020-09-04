@@ -610,8 +610,6 @@ int ft8006m_gesture_resume(struct i2c_client *client)
     FTS_FUNC_EXIT();
     return 0;
 }
-extern int tp_gesture_onoff;
-
 static ssize_t gesture_read(struct file *file, char __user *page, size_t size, loff_t *ppos)
 {
 	int ret;
