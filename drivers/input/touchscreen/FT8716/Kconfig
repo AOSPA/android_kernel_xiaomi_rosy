@@ -1,0 +1,6 @@
+config FT8716_ROSY
+	tristate "FT8716 touchscreen driver"
+	help
+	  Say Y here to compile touchscreen drivers for FocalTech FT8716.
+
+	  If unsure, say Y.
