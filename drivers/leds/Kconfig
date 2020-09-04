@@ -742,6 +742,11 @@ config LEDS_QPNP_VIBRATOR
 	  manually or by the DTEST lines.It uses the android timed-output
 	  framework.
 
+config AW2013_ROSY
+	tristate "LED support for rosy"
+	help
+	  This option enables LED light in Redmi 5.
+
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"
 
