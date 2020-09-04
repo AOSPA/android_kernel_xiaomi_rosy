@@ -1295,6 +1295,10 @@ source "drivers/cpufreq/Kconfig"
 
 endmenu
 
+config ROSY
+	bool "Xiaomi Redmi 5 support"
+	depends on ARCH_SDM450
+
 source "net/Kconfig"
 
 source "drivers/Kconfig"
