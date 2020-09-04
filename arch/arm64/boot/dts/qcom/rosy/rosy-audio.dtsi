@@ -15,9 +15,9 @@
 };
 
 &msm_digital_codec {
-	status = "ok";
-};
+status = "ok";
+ };
 
 &pmic_analog_codec {
-	status = "ok";
+status = "ok";
 };

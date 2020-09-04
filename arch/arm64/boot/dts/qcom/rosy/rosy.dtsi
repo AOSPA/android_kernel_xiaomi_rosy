@@ -15,7 +15,6 @@
 #include "rosy-audio.dtsi"
 #include "rosy-camera.dtsi"
 #include "rosy-general.dtsi"
-#include "rosy-gpu.dtsi"
 #include "rosy-mdss.dtsi"
 #include "rosy-misc.dtsi"
 #include "rosy-mpm.dtsi"

@@ -77,7 +77,7 @@
 
 &spmi_bus {
 
-	qcom,pmi8940@3 {
+	qcom,pmi8950@3 {
 		labibb: qpnp-labibb-regulator {
 			ibb_regulator: qcom,ibb@dc00 {
 				/delete-property/ qcom,qpnp-ibb-use-default-voltage;
@@ -138,21 +138,21 @@
 	pinctrl-0 = <&typec_ssmux_config>;
 };
 
-&pmi8940_flash0 {
+&pmi8950_flash0 {
 	qcom,current = <1000>;
 };
 
-&pmi8940_flash1 {
+&pmi8950_flash1 {
 	qcom,current = <800>;
 };
 
-&pmi8940_torch1 {
+&pmi8950_torch1 {
 	qcom,current = <75>;
 };
 
 &usb3 {
 	vbus_dwc3-supply = <&smbcharger_charger_otg>;
-	qcom,usbin-vadc = <&pmi8940_vadc>;
+	qcom,usbin-vadc = <&pmi8950_vadc>;
 	qcom,detect-dpdm-floating;
 };
 
@@ -161,7 +161,7 @@
 	qcom,float-voltage-mv = <4400>;
 	qcom,chg-inhibit-fg;
 	qcom,thermal-mitigation = <2000 1800 1500 1200 1000 0>;
-	qcom,vchg_sns-vadc = <&pmi8940_vadc>;
+	qcom,vchg_sns-vadc = <&pmi8950_vadc>;
 	qcom,vchg-adc-channel-id = <3>;
 	qcom,customize-cool-low-limit = <0>;
 	qcom,customize-cool-high-limit = <50>;
