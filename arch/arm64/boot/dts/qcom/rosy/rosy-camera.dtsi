@@ -1,12 +1,14 @@
 &soc {
-	led_flash1: qcom,camera-flash@1 {
-		cell-index = <1>;
+	led_flash0: qcom,camera-flash@0 {
+		cell-index = <0>;
 		compatible = "qcom,camera-flash";
 		qcom,flash-type = <1>;
-		qcom,flash-source = <&pmi8950_flash1>;
-		qcom,torch-source = <&pmi8950_torch1>;
+		qcom,flash-source = <&pmi8950_flash0>;
+		qcom,torch-source = <&pmi8950_torch0>;
 		qcom,switch-source = <&pmi8950_switch>;
 	};
+
+	/delete-node/ qcom,camera-flash;
 };
 
 &cci {
@@ -286,7 +288,6 @@
 		qcom,csiphy-sd-index = <2>;
 		qcom,csid-sd-index = <2>;
 		qcom,mount-angle = <90>;
-		qcom,led-flash-src = <&led_flash1>;
 		qcom,eeprom-src = <&eeprom2 &eeprom3>;
 		cam_vdig-supply = <&pm8953_l23>;
 		cam_vio-supply = <&pm8953_l6>;

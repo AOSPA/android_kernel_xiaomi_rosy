@@ -146,10 +146,6 @@
 	qcom,current = <800>;
 };
 
-&pmi8950_torch1 {
-	qcom,current = <75>;
-};
-
 &usb3 {
 	vbus_dwc3-supply = <&smbcharger_charger_otg>;
 	qcom,usbin-vadc = <&pmi8950_vadc>;
