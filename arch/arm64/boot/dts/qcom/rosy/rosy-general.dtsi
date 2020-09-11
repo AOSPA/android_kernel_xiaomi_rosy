@@ -315,6 +315,8 @@
 
 &usb3 {
 	qcom,msm-bus,num-cases = <2>;
+        extcon = <&qpnp_smbcharger>;
+        vbus_dwc3-supply = <&smbcharger_charger_otg>;
 };
 
 &pmi_haptic {

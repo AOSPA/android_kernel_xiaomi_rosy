@@ -22,6 +22,7 @@
 #include "msm8953-regulator.dtsi"
 #include "pm8953.dtsi"
 #include "pmi8950.dtsi"
+#include "msm8953-pmi8950.dtsi"
 
 / {
 	model = "Qualcomm Technologies, Inc. SDM450 + PMI8940 QRD";
