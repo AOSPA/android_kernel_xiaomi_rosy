@@ -775,25 +775,6 @@ static void msm8952_ext_spk_control(u32 enable)
 		AW87319_Audio_OFF();
 }
 
-static void msm8x16_ext_spk_delayed_dualmode(u32 enable)
-{
-    int i = 0;
-
-    /* Open the headset device */
-    gpio_direction_output(headset_gpio, true);
-    usleep_range(EXT_CLASS_D_EN_DELAY,
-		 EXT_CLASS_D_EN_DELAY + EXT_CLASS_D_DELAY_DELTA);
-
-    for (i = 0; i < AW8736_MODE; i++) {
-		 gpio_direction_output(spk_pa_gpio, false);
-		 gpio_direction_output(spk_pa_gpio, true);
-    }
-    usleep_range(EXT_CLASS_D_EN_DELAY,
-		 EXT_CLASS_D_EN_DELAY + EXT_CLASS_D_DELAY_DELTA);
-
-    pr_debug("%s: Enable external speaker PAs dualmode.\n", __func__);
-}
-
 static int headset_status_get(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
